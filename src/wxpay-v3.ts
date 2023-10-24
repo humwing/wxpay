@@ -1,6 +1,6 @@
 import * as utils from "./util.js";
 // import { pipeline } from 'node:stream/promises';
-import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
 import { URL } from "url";
 import crypto from "crypto";
 import moment from "moment";

@@ -2,7 +2,10 @@
   "name": "@humwing/wxpay",
   "version": "0.0.2",
   "description": "wechat pay",
-  "keywords": ["微信支付", "微信支付V3接口"],
+  "keywords": [
+    "微信支付",
+    "微信支付V3接口"
+  ],
   "license": "MIT",
   "scripts": {
     "build": "unbuild"
@@ -26,16 +29,17 @@
     }
   },
   "devDependencies": {
+    "@types/node": "^20.8.6",
     "@types/uuid": "^9.0.5",
     "@types/xml2js": "^0.4.12",
-    "@types/node": "^20.8.6",
-    "axios": "^1.5.1",
-    "moment": "^2.29.4",
     "typescript": "^5.0.2",
-    "uuid": "^9.0.1",
-    "xml2js": "^0.6.2"
+    "unbuild": "^2.0.0"
   },
   "dependencies": {
-    "unbuild": "^2.0.0"
+    "axios": "^1.5.1",
+    "form-data": "^4.0.0",
+    "moment": "^2.29.4",
+    "uuid": "^9.0.1",
+    "xml2js": "^0.6.2"
   }
 }
