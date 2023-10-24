@@ -1,4 +1,5 @@
 import * as utils from "./util.js";
+// import { pipeline } from 'node:stream/promises';
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 import { URL } from "url";
 import crypto from "crypto";
@@ -7,6 +8,7 @@ import path from "path";
 import FormData from "form-data";
 import fs from "fs";
 import RSA from "./rsa.js";
+import { Stream } from "stream";
 type Options = {
   mchid: string;
   serialNo?: string;
@@ -48,8 +50,7 @@ function X509Certificate(publicEncrypt:any) {
   }
 }
 export default class WXPayV3 {
-  options: Options;
-  axios: AxiosInstance;
+  private options: Options;
    /**
    * 初始化
    * @constructs WXPayV3
@@ -104,25 +105,6 @@ export default class WXPayV3 {
       throw new Error("api秘钥错误！");
     }
     this.options = _options;
-    let _axios = axios.create();
-    _axios.interceptors.request.use((config) => {
-      let requestUrl = utils.buildURL(
-        config.url as string,
-        config.params,
-        config.paramsSerializer,
-      );
-      let requestURL = new URL(requestUrl);
-
-      let token = this.getToken(
-        config.method as string,
-        requestURL.pathname + requestURL.search,
-        config.data,
-      );
-      config.headers = config.headers || {} as any;
-      config.headers.Authorization = `WECHATPAY2-SHA256-RSA2048 ${token}`;
-      return config;
-    });
-    this.axios = _axios;
   }
   /**
    * 创建实例
@@ -149,9 +131,7 @@ export default class WXPayV3 {
       nonceStr,
       body ? JSON.stringify(body) : "",
     ]);
-    console.log("getToken", message);
     let signature = this.sign(message);
-    console.log("getToken", signature);
     return `mchid="${this.options.mchid}",nonce_str="${nonceStr}",timestamp="${timestamp}",serial_no="${this.options.serialNo}",signature="${signature}"`;
   }
   /**
@@ -191,15 +171,36 @@ export default class WXPayV3 {
       nonce: iv,
     };
   }
+  /**
+   * 使用平台证书加密数据
+   * @param text 需要加密的明文
+   * @param serial_no 证书编号，如果没有指定就取第一个，指定了会根据指定的证书编号使用证书信息加密
+   * @returns 返回加密后的数据
+   */
   async encryptPublic(text: string, serial_no?: string) {
     let cert = await this.getPlatformCert(serial_no, true);
     return RSA.encrypt(text, cert[0]?.decrypt_certificate);
   }
+  /**
+   * 解密数据
+   * @param ciphertext 密文
+   * @returns 返回解密后的数据
+   */
   async decryptPublic(ciphertext: string) {
     return RSA.decrypt(ciphertext, this.options.privateKeyStr as string);
   }
-  private getHash(stream: fs.ReadStream) {
-    return new Promise((resolve, reject) => {
+  /**
+   * 用于上传文件的时候读取文件的hash值
+   * @param stream 可读流
+   * @returns 返回文件hash值
+   */
+  private async getHash(stream:Stream) {
+    // 新的api模式
+    // const hash = crypto.createHash("sha256");
+    // await pipeline(stream, hash)
+    // const data = hash.read()
+    // return data?.toString("hex")
+    return new Promise<string>((resolve, reject) => {
       let hash = crypto.createHash("sha256");
       stream.pipe(hash);
       hash.on("finish", () => {
@@ -213,206 +214,63 @@ export default class WXPayV3 {
       });
     });
   }
-  async uploadMediaByBase64(
-    base64: string,
-    filename: string,
-    type?: "image" | "video",
-  ) {
-    let form = new FormData();
-    let data = fs.createReadStream(Buffer.from(base64, "base64"));
-    form.append("file", data);
-    // 读取文件的hash值
-    let sha256 = await this.getHash(data);
-    let meta = {
+  /**
+   * 获取微信支付mediaId
+   * @param apiUrl 获取media的api完整路径，这里因为不同的业务api地址不同，因此需要自己传递
+   * @param type 文件类型，支持base64、binary、url文件地址、fs.createStream文件流格式
+   * @param data 具体的文件内容，需要跟格式相匹配
+   * @param filename 文件名称，需要填写，微信支付需要指定，这里请按实际文件格式填写
+   * @returns
+   */
+  async uploadMedia(apiUrl:string, type:'base64'|'binary'|'url'|'stream', data:string|Buffer|fs.ReadStream|Blob, filename:string){
+    // 创建form对象
+    const form = new FormData();
+    let stream = null;
+    // 数据类型处理
+    switch(type){
+      case "base64":
+        stream = Stream.Duplex.from(Buffer.from(data as string, "base64"));
+        break;
+      case "binary":
+        stream = Stream.Duplex.from(data)
+        break;
+      case "url":
+        // 下载文件
+        let { data: downloadData } = await axios.get(data as string, {
+          responseType: "stream",
+        });
+        stream = downloadData;
+        break;
+      case "stream":
+        stream = data;
+        break;
+    }
+    /** 这里需要指定filename，不然binary格式的文件生成的头不正确，微信支付上传文件会读取失败 */
+    form.append("file", stream, {
+      filename: filename
+    });
+    let sha256 = await this.getHash(stream);
+    // 文件基础信息
+    const meta = {
       filename: filename,
       sha256: sha256,
     };
     form.append("meta", JSON.stringify(meta));
-    let params: any = {
-      url: `https://api.mch.weixin.qq.com/v3/merchant/media/${
-        type === "video" ? "video_upload" : "upload"
-      }`,
+    // 发起请求的参数
+    const params: any = {
+      url: apiUrl,
       method: "POST",
       data: form,
       headers: form.getHeaders(),
     };
-    let requestUrl = utils.buildURL(
-      params.url,
-      params.params,
-      params.paramsSerializer,
-    );
-    let requestURL = new URL(requestUrl);
-    // 构建请求的token
-    let token = this.getToken(
-      params.method,
-      requestURL.pathname + requestURL.search,
-      meta,
-    );
-    params.headers = params.headers || {};
-    params.headers.Authorization = `WECHATPAY2-SHA256-RSA2048 ${token}`;
-    console.log(params.headers.Authorization);
-    return axios.request(params);
-  }
-  async uploadMediaByStream(
-    data: fs.ReadStream,
-    filename: string,
-    type?: "image" | "video",
-  ) {
-    let form = new FormData();
-    form.append("file", data);
-    // 读取文件的hash值
-    let sha256 = await this.getHash(data);
-    let meta = {
-      filename: filename,
-      sha256: sha256,
-    };
-    form.append("meta", JSON.stringify(meta));
-    let params: any = {
-      url: `https://api.mch.weixin.qq.com/v3/merchant/media/${
-        type === "video" ? "video_upload" : "upload"
-      }`,
-      method: "POST",
-      data: form,
-      headers: form.getHeaders(),
-    };
-    let requestUrl = utils.buildURL(
-      params.url,
-      params.params,
-      params.paramsSerializer,
-    );
-    let requestURL = new URL(requestUrl);
-    // 构建请求的token
-    let token = this.getToken(
-      params.method,
-      requestURL.pathname + requestURL.search,
-      meta,
-    );
-    params.headers = params.headers || {};
-    params.headers.Authorization = `WECHATPAY2-SHA256-RSA2048 ${token}`;
-    console.log(params.headers.Authorization);
-    return axios.request(params);
-  }
-  async uploadMediaByUrl(fileUrl: string, type?: "image" | "video") {
-    let form = new FormData();
-    // 下载文件
-    let { data } = await axios.get(fileUrl, {
-      responseType: "stream",
-    });
-    let lastFileIndex = fileUrl.lastIndexOf("/");
-    // 获取文件名
-    let urlName = fileUrl.substr(lastFileIndex + 1);
-    form.append("file", data);
-    // 读取文件的hash值
-    let sha256 = await this.getHash(data);
-    let meta = {
-      filename: urlName,
-      sha256: sha256,
-    };
-    form.append("meta", JSON.stringify(meta));
-    let params: any = {
-      url: `https://api.mch.weixin.qq.com/v3/merchant/media/${
-        type === "video" ? "video_upload" : "upload"
-      }`,
-      method: "POST",
-      data: form,
-      headers: form.getHeaders(),
-    };
-    let requestUrl = utils.buildURL(
-      params.url,
-      params.params,
-      params.paramsSerializer,
-    );
-    let requestURL = new URL(requestUrl);
-    // 构建请求的token
-    let token = this.getToken(
-      params.method,
-      requestURL.pathname + requestURL.search,
-      meta,
-    );
-    params.headers = params.headers || {};
-    params.headers.Authorization = `WECHATPAY2-SHA256-RSA2048 ${token}`;
-    console.log(params.headers.Authorization);
-    return axios.request(params);
-  }
-  async uploadImageByUrl(fileUrl: string) {
-    let form = new FormData();
-    let { data } = await axios.get(fileUrl, {
-      responseType: "stream",
-    });
-    let lastFileIndex = fileUrl.lastIndexOf("/");
-    let urlName = fileUrl.substr(lastFileIndex + 1);
-    form.append("file", data);
-    let sha256 = await this.getHash(data);
-    let meta = {
-      filename: urlName,
-      sha256: sha256,
-    };
-    form.append("meta", JSON.stringify(meta));
-    let params: any = {
-      url: "https://api.mch.weixin.qq.com/v3/merchant/media/upload",
-      method: "POST",
-      data: form,
-      headers: form.getHeaders(),
-    };
-    let requestUrl = utils.buildURL(
-      params.url,
-      params.params,
-      params.paramsSerializer,
-    );
-    let requestURL = new URL(requestUrl);
-    let token = this.getToken(
-      params.method,
-      requestURL.pathname + requestURL.search,
-      meta,
-    );
-    params.headers = params.headers || {};
-    params.headers.Authorization = `WECHATPAY2-SHA256-RSA2048 ${token}`;
-    console.log(params.headers.Authorization);
-    return axios.request(params);
-  }
-  async uploadVideoByUrl(fileUrl: string) {
-    let form = new FormData();
-    let { data } = await axios.get(fileUrl, {
-      responseType: "stream",
-    });
-    let lastFileIndex = fileUrl.lastIndexOf("/");
-    let urlName = fileUrl.substr(lastFileIndex + 1);
-    form.append("file", data);
-    let sha256 = await this.getHash(data);
-    let meta = {
-      filename: urlName,
-      sha256: sha256,
-    };
-    form.append("meta", JSON.stringify(meta));
-    let params: any = {
-      url: "https://api.mch.weixin.qq.com/v3/merchant/media/video_upload",
-      method: "POST",
-      data: form,
-      headers: form.getHeaders(),
-    };
-    let requestUrl = utils.buildURL(
-      params.url,
-      params.params,
-      params.paramsSerializer,
-    );
-    let requestURL = new URL(requestUrl);
-
-    let token = this.getToken(
-      params.method,
-      requestURL.pathname + requestURL.search,
-      meta,
-    );
-    params.headers = params.headers || {};
-    params.headers.Authorization = `WECHATPAY2-SHA256-RSA2048 ${token}`;
-    console.log(params.headers.Authorization);
-    return axios.request(params);
+    return this.request(params, meta);
   }
   /**
-   * 解密证书
+   * 解密数据
    * @param ciphertext  Base64编码后的开启/停用结果数据密文
    * @param associated_data 附加数据
    * @param nonce 加密使用的随机串
-   * @param key  APIv3密钥
+   * @param key  APIv3密钥，如果未提供则取实例的
    */
   public decipher(
     ciphertext: string,
@@ -435,8 +293,14 @@ export default class WXPayV3 {
     decipher.final();
     return decoded;
   }
-
-  async decryptData(
+  /**
+   *  解密数据
+   * @param ciphertext 密文
+   * @param associated_data 关联数据
+   * @param nonce 随机字符
+   * @returns 解密后的数据，如果是json格式会parse后返回，parse失败则按解密结果返回
+   */
+  decryptData(
     ciphertext: string,
     associated_data: string,
     nonce: string,
@@ -450,7 +314,7 @@ export default class WXPayV3 {
     return res as any;
   }
   /**
-   *
+   * 校验签名
    * @param wechatpayTimestamp 微信支付返回的时间戳
    * @param wechatpayNonce  微信支付返回的随机串
    * @param wechatpaySignature  微信支付返回的签名串
@@ -493,6 +357,12 @@ export default class WXPayV3 {
     let valid = verify.verify(keyObject, wechatpaySignature, "base64");
     return valid;
   }
+  /**
+   * 获取微信支付平台证书列表
+   * @param serial_no 证书序列号
+   * @param decrypt 是否解密
+   * @returns 返回证书列表
+   */
   async getPlatformCert(
     serial_no?: string,
     decrypt?: boolean,
@@ -569,9 +439,10 @@ export default class WXPayV3 {
   /**
    * 发起请求
    * @param params 请求数据
+   * @param signData 参与签名的参数对象，默认是request.body，也可以自行指定，如上传文件则需要特殊处理
    * @returns 请求结果
    */
-  request(params: AxiosRequestConfig) {
+  request(params: AxiosRequestConfig, signData?: any) {
     let requestUrl = utils.buildURL(
       params.url as string,
       params.params,
@@ -582,7 +453,7 @@ export default class WXPayV3 {
     let token = this.getToken(
       params.method ?? "GET",
       requestURL.pathname + requestURL.search,
-      params.data,
+      signData ?? params.data,
     );
     params.headers = params.headers || {};
     params.headers.Authorization = `WECHATPAY2-SHA256-RSA2048 ${token}`;

@@ -5,14 +5,17 @@ import path from "path";
 import moment from "moment";
 import crypto from "crypto";
 export type WXPayOptions = {
+  /** 商户号 */
   mchid: string;
+  /** V2秘钥 */
   apiV2Secret: string;
+  /** 商户p12证书 */
   p12: Buffer | string;
 };
 export default class WXPayV2 {
-  options: WXPayOptions;
+  private options: WXPayOptions;
   /**
-   *
+   * 构造函数
    * @param {WXPayOptions} options
    */
   constructor(options: WXPayOptions) {
@@ -63,15 +66,19 @@ export default class WXPayV2 {
       .join("&");
     return crypto.createHash('md5').update(querystring + "&key=" + this.options.apiV2Secret).digest('hex').toUpperCase();
   }
-  // 16位就是取中间16位
+  /**
+   * 生成16位的MD5签名，16位就是取中间16位
+   * @param param 签名参数
+   * @returns 返回16位的签名
+   */
   sign16(param: { [key: string]: any }) {
     const str = this.sign(param)
     return str.substring(8, 24);
   }
   /**
    * 生成HMAC-SHA256签名
-   * @param param
-   * @returns
+   * @param param 签名参数
+   * @returns 返回签名值
    */
   signHMACSHA256(param: { [key: string]: any }) {
     let querystring = Object.keys(param)

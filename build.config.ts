@@ -15,7 +15,7 @@ export default defineBuildConfig({
   rollup: {
     inlineDependencies: true,
     output: {
-      sourcemap: true,
+      sourcemap: false,
     },
     emitCJS: true
   },

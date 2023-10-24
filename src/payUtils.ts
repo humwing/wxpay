@@ -4,7 +4,7 @@ import crypto from "crypto";
  */
 const PayUtil = {
   /**
-   * 获取签名
+   * 获取RSA-SHA256签名，返回base64格式
    * @param message 需要被签名的信息
    * @param privateKey 私钥，PRIVATE KEY
    * @returns 签名信息
@@ -16,7 +16,7 @@ const PayUtil = {
     return signature;
   },
   /**
-   * 加密数据
+   * aes-256-gcm加密数据
    * @param data 待加密的字符串
    * @param aad 额外的鉴权信息
    * @param iv 初始向量
@@ -39,7 +39,7 @@ const PayUtil = {
     };
   },
   /**
-   * 解密数据
+   * aes-256-gcm解密数据
    * @param ciphertext 密文
    * @param aad 鉴权数据
    * @param iv 初始向量
