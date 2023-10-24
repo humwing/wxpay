@@ -5,7 +5,6 @@
 # 使用
 
 > V3接口使用
-
 ```javascript
 import wxpay from 'wxpay'
 // 创建V3实例
@@ -90,7 +89,6 @@ v3.request({
 ```
 **V3的请求需要特殊注意的地方：**文件上传，因为上传的文件内容不参与签名计算，所以跟其他的接口特殊区分了，如果要上传文件直接调用`uploadMedia`函数
 > 上传文件跟其他请求的唯一差别，正常请求参数body参与签名计算，文件上传仅meta参数参与签名计算
-
 ```javascript
 // 因为不同的功能模块上传文件的接口不一样，因此这里提供自行填写
 // base64文件格式上传
@@ -108,6 +106,7 @@ console.log('v3.smedia', smedia.data)
 ```
 
 > V2接口使用，目前官方已基本只提供V3接口，部分地方还需要V2（参考文档：https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=11_1）
+
 
 ```javascript
 import wxpay from 'wxpay'

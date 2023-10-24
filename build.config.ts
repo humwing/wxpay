@@ -24,5 +24,5 @@ export default defineBuildConfig({
   outDir: "dist",
   failOnWarn: false,
   // Generates .d.ts declaration file
-  declaration: 'node16',
+  declaration: true,
 });

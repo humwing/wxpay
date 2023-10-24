@@ -1,20 +1,24 @@
 {
-  "name": "wxpay",
-  "private": true,
-  "version": "0.0.1",
+  "name": "@humwing/wxpay",
+  "version": "0.0.2",
   "description": "wechat pay",
+  "keywords": ["微信支付", "微信支付V3接口"],
   "license": "MIT",
   "scripts": {
-    "tsbuild": "tsc",
     "build": "unbuild"
   },
   "files": [
     "dist"
   ],
   "type": "module",
-  "types": "./dist/index.d.mts",
+  "types": "./dist/index.d.ts",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
+  "homepage": "https://github.com/humwing/wxpay",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/humwing/wxpay.git"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.mjs",

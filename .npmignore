@@ -1,3 +1,5 @@
 build.config.ts
 package-lock.json
 src
+dist/index.d.cts
+dist/index.d.mts
