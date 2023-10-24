@@ -10,13 +10,18 @@ import fs from "fs";
 import RSA from "./rsa.js";
 import { Stream } from "stream";
 type Options = {
+  /**商户id*/
   mchid: string;
-  serialNo?: string;
-  privateKey?: string | crypto.KeyObject;
+  /**证书序列号*/
+  serialNo: string;
+  /**V3商户秘钥*/
+  apiV3Secret: string;
+  /**证书私钥*/
+  privateKey: string | crypto.KeyObject;
   privateKeyStr?: string;
-  publicKey?: string | crypto.KeyObject;
+  /**证书公钥*/
+  publicKey: string | crypto.KeyObject;
   publicKeyStr?: string;
-  apiV3Secret?: string;
 };
 
 type WXPayPlatformCert = {
