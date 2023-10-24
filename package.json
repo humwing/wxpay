@@ -1,0 +1,36 @@
+{
+  "name": "wxpay",
+  "private": true,
+  "version": "0.0.1",
+  "description": "wechat pay",
+  "scripts": {
+    "tsbuild": "tsc",
+    "build": "unbuild"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "types": "./dist/index.d.mts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.5",
+    "@types/xml2js": "^0.4.12",
+    "@types/node": "^20.8.6",
+    "axios": "^1.5.1",
+    "moment": "^2.29.4",
+    "typescript": "^5.0.2",
+    "uuid": "^9.0.1",
+    "xml2js": "^0.6.2"
+  },
+  "dependencies": {
+    "unbuild": "^2.0.0"
+  }
+}
