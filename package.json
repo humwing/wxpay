@@ -1,10 +1,11 @@
 {
   "name": "@humwing/wxpay",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "wechat pay",
   "keywords": [
     "微信支付",
-    "微信支付V3接口"
+    "微信支付V3接口",
+    "微信支付发券"
   ],
   "license": "MIT",
   "scripts": {
