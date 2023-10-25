@@ -144,7 +144,8 @@ export default class WXPayV2 {
       };
     }, {})
     // 再加上商户信息，默认使用当前商户，减少冗余参数传递
-    signParams['send_coupon_merchant'] = send_coupon_merchant ?? this.options.mchid;
+    send_coupon_merchant = send_coupon_merchant ?? this.options.mchid;
+    signParams['send_coupon_merchant'] = send_coupon_merchant;
     // 生成签名
     const sign = this.signHMACSHA256(signParams)
     // 组装wx.addCard参数，此参数同时支持给到微信小程序插件、微信小程序api、微信公众号api的形式

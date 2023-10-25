@@ -1,6 +1,6 @@
 {
   "name": "@humwing/wxpay",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "wechat pay",
   "keywords": [
     "微信支付",

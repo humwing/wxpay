@@ -59,7 +59,7 @@ export function getWXPayCouponApiCouponInfo(stockList: {stock_id: string, out_re
   // 再加上商户信息
   signParams['send_coupon_merchant'] = send_coupon_merchant;
   // 生成签名
-  const sign = this.signHMACSHA256(signParams, secret)
+  const sign = signHMACSHA256(signParams, secret)
   // 组装wx.addCard参数，此参数同时支持给到微信小程序插件、微信小程序api、微信公众号api的形式
   // 微信小程序插件
   const miniPluginParams = {
