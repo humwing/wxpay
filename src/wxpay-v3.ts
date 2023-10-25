@@ -22,6 +22,8 @@ type Options = {
   /**证书公钥*/
   publicKey: string | crypto.KeyObject;
   publicKeyStr?: string;
+  /** 主域名 */
+  baseURL?: string
 };
 
 type WXPayPlatformCert = {
@@ -110,6 +112,10 @@ export default class WXPayV3 {
       throw new Error("api秘钥错误！");
     }
     this.options = _options;
+    // 默认设置主域名
+    axios.defaults.baseURL = this.options.baseURL
+    // v3需要设置Content-Type为'application/json'
+    axios.defaults.headers.common['Content-Type'] = 'application/json'
   }
   /**
    * 创建实例
@@ -448,15 +454,17 @@ export default class WXPayV3 {
    * @returns 请求结果
    */
   request(params: AxiosRequestConfig, signData?: any) {
+    params.baseURL = params.baseURL ?? this.options.baseURL;
     let requestUrl = utils.buildURL(
       params.url as string,
       params.params,
       params.paramsSerializer,
     );
-    let requestURL = new URL(requestUrl);
-
+    let requestURL = new URL(requestUrl, params.baseURL);
+    // 转化成大写，因为发起请求的时候方法是大写
+    params.method = (params.method ?? "GET").toUpperCase();
     let token = this.getToken(
-      params.method ?? "GET",
+      params.method,
       requestURL.pathname + requestURL.search,
       signData ?? params.data,
     );
