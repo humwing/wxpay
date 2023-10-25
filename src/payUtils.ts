@@ -17,13 +17,15 @@ export function signRSASHA256(message: string, privateKey: string) {
 * @param {string} stock_id - 微信支付商家券批次.
 * @param {string} send_coupon_merchant - 微信支付服务商id.
 * @param {string} open_id - 需要发放的用户openid，此openid需要是与商户号关联的公众号openid或者小程序的openid.
+* @param {string} out_request_no - 发券流水号.
+* @param {string} secret - V2秘钥.
 * @return {string} 返回领取链接
 */
-export function getH5CouponUrl(stock_id: string, send_coupon_merchant: string, open_id: string, secret: string) {
+export function getH5CouponUrl(stock_id: string, send_coupon_merchant: string, open_id: string,out_request_no: string, secret: string) {
   // H5签名，使用V2
   const params = {
     stock_id,
-    out_request_no: Date.now(),
+    out_request_no,
     send_coupon_merchant,
     open_id
   }
@@ -36,9 +38,10 @@ export function getH5CouponUrl(stock_id: string, send_coupon_merchant: string, o
 *
 * @param {Array<{stock_id: string, out_request_no: string, coupon_code?: string,customize_send_time?:string}>} stockList - 微信卡券批次信息
 * @param {string|number} send_coupon_merchant 商户id，服务商请填写服务商id，直连商户填直连商户id
+* @param {string} secret 商户V2秘钥
 * @return {{miniPluginParams,miniApiParams,jssdkParams}} an object containing three parameters: miniPluginParams, miniApiParams, and jssdkParams
 */
-export function getWXPayCouponApiCouponInfo(stockList, send_coupon_merchant, secret: string) {
+export function getWXPayCouponApiCouponInfo(stockList: {stock_id: string, out_request_no: string, coupon_code?: string,customize_send_time?:string}[], send_coupon_merchant:string, secret: string) {
   // 签名形式：out_request_no0=abc123&out_request_no1=123abc&send_coupon_merchant=10016226&stock_id0=1234567&stock_id1=2345678&key=xxxxx
   // 单独参与：send_coupon_merchant，相当于只能发一个商户的，不能同时发2个商户的
   const signParams = stockList.reduce((pval, item, index) => {
