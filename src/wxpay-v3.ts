@@ -403,7 +403,7 @@ export default class WXPayV3 {
     });
     if (decrypt) {
       data.data?.map((item: WXPayPlatformCert) => {
-        item.encrypt_certificate = this.decipher(
+        item.decrypt_certificate = this.decipher(
           item.encrypt_certificate.ciphertext,
           item.encrypt_certificate.associated_data,
           item.encrypt_certificate.nonce,
