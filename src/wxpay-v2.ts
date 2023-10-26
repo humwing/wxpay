@@ -2,7 +2,6 @@ import * as util from "./util.js";
 import axios, { type AxiosRequestConfig } from "axios";
 import fs from "fs";
 import path from "path";
-import moment from "moment";
 import crypto from "crypto";
 export type WXPayOptions = {
   /** 商户号 */
@@ -207,7 +206,7 @@ export default class WXPayV2 {
    */
   getMiniPayInfo(appId: string, prepayid: string,signType:'MD5'|'HMAC-SHA256'='MD5') {
     let nonceStr = util.generateNonceString();
-    let timeStamp = String(moment().unix());
+    let timeStamp = (Date.now() / 1000).toFixed(0);
     let message = {
       appId,
       nonceStr,

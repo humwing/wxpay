@@ -1,6 +1,6 @@
 {
   "name": "@humwing/wxpay",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "wechat pay",
   "keywords": [
     "微信支付",
@@ -37,7 +37,6 @@
   "dependencies": {
     "axios": "^1.5.1",
     "form-data": "^4.0.0",
-    "moment": "^2.29.4",
     "uuid": "^9.0.1",
     "xml2js": "^0.6.2"
   }

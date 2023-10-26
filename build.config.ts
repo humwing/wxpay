@@ -6,6 +6,9 @@ export default defineBuildConfig({
   ],
   rollup: {
     emitCJS: true,
+    output: {
+      exports: 'named'
+    }
   },
   externals: [/node_modules/, 'axios'],
   failOnWarn: false,

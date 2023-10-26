@@ -3,7 +3,6 @@ import * as utils from "./util.js";
 import axios, { type AxiosRequestConfig } from "axios";
 import { URL } from "url";
 import crypto from "crypto";
-import moment from "moment";
 import path from "path";
 import FormData from "form-data";
 import fs from "fs";
@@ -134,7 +133,7 @@ export default class WXPayV3 {
    */
   getToken(method: string, url: string, body?: { [key: string]: any }) {
     let nonceStr = utils.generateNonceString();
-    let timestamp = String(moment().unix());
+    let timestamp = (Date.now() / 1000).toFixed(0);
     let message = this.buildMessage([
       method,
       url,
@@ -435,7 +434,7 @@ export default class WXPayV3 {
    */
   getMiniPayInfo(appid: string, prepayid: string) {
     let nonceStr = utils.generateNonceString();
-    let timeStamp = String(moment().unix());
+    let timeStamp = (Date.now() / 1000).toFixed(0);
     let mpackage = "prepay_id=" + prepayid;
     let message = this.buildMessage([appid, timeStamp, nonceStr, mpackage]);
     let paySign = this.sign(message);
